@@ -3,7 +3,7 @@ name: Build Barberry Remote (Windows)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # allows manual trigger
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -19,21 +19,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'a42af01b72c28a8e1d7b48107b33e4f286a55ef6'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          git pull
+          .\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=$pwd" >> $env:GITHUB_ENV
 
       - name: Install vcpkg dependencies
         run: |
-          vcpkg install --triplet x64-windows-static
+          .\vcpkg\vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static --disable-metrics
 
       - name: Install LLVM
         run: choco install llvm -y
 
       - name: Set environment variables
         run: |
-          echo "VCPKG_ROOT=$env:VCPKG_ROOT" >> $env:GITHUB_ENV
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
 
       - name: Build
         run: cargo build --release
@@ -42,5 +45,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: barberry-remote-windows
-          path: target/release/barberry-remote.exe
+          path: target/release/*.exe
           retention-days: 30
