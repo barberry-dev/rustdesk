@@ -18,6 +18,12 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
       - name: Setup vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg.git
@@ -38,12 +44,18 @@ jobs:
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
           echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
 
-      - name: Build
-        run: cargo build --release
+      - name: Build Rust bridge
+        run: |
+          cargo install flutter_rust_bridge_codegen --version 1.80.1
+          flutter_rust_bridge_codegen --rust-input src/flutter_ffi.rs --dart-output flutter/lib/generated_bridge.dart
 
-      - name: Upload EXE artifact
+      - name: Build Flutter + Rust (Release)
+        run: |
+          python3 .\build.py --windows
+
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: barberry-remote-windows
-          path: target/release/*.exe
+          path: flutter\build\windows\x64\runner\Release\*.exe
           retention-days: 30
