@@ -51,7 +51,7 @@ jobs:
 
       - name: Build Flutter + Rust (Release)
         run: |
-          python3 .\build.py --windows
+          python3 .\build.py --flutter
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
